@@ -3,523 +3,857 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyberpunk Alleyway</title>
+    <title>Cyberpunk 2077 - Neo City</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            cursor: crosshair;
         }
 
         body {
             overflow: hidden;
             font-family: 'Courier New', monospace;
             background: #000;
+            cursor: crosshair;
         }
 
+        /* 3D Scene Container */
         #scene {
             width: 100vw;
             height: 100vh;
             position: relative;
-            background: linear-gradient(to bottom, #0a0015 0%, #1a0a2e 50%, #0f0520 100%);
+            perspective: 1200px;
+            perspective-origin: 50% 50%;
+            transform-style: preserve-3d;
             overflow: hidden;
         }
 
-        /* Alleyway environment */
-        .alley-container {
+        .scene-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-style: preserve-3d;
+            transition: opacity 0.8s, transform 0.8s;
+        }
+
+        .scene-container.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.9);
+        }
+
+        /* 3D Environment Layers */
+        .environment {
             width: 100%;
             height: 100%;
             position: relative;
-            perspective: 1000px;
+            transform-style: preserve-3d;
         }
 
-        /* Brick walls */
-        .left-wall, .right-wall {
+        /* Sky layer */
+        .sky {
             position: absolute;
-            height: 100%;
-            width: 40%;
-            background: repeating-linear-gradient(
-                0deg,
-                #1a1a1a 0px,
-                #2a2a2a 8px,
-                #1a1a1a 9px,
-                #1a1a1a 18px
-            );
-            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
-        }
-
-        .left-wall {
-            left: 0;
-            transform: rotateY(15deg);
-            transform-origin: right center;
-            background-image:
-                repeating-linear-gradient(0deg, #1a1a1a 0px, #2a2a2a 8px, #1a1a1a 9px),
-                repeating-linear-gradient(90deg, transparent 0px, rgba(0,0,0,0.3) 40px, transparent 41px);
-        }
-
-        .right-wall {
-            right: 0;
-            transform: rotateY(-15deg);
-            transform-origin: left center;
-            background-image:
-                repeating-linear-gradient(0deg, #1a1a1a 0px, #2a2a2a 8px, #1a1a1a 9px),
-                repeating-linear-gradient(90deg, transparent 0px, rgba(0,0,0,0.3) 40px, transparent 41px);
-        }
-
-        /* Ground */
-        .ground {
-            position: absolute;
-            bottom: 0;
             width: 100%;
-            height: 30%;
-            background: linear-gradient(to bottom, #0a0a0a 0%, #1a1a1a 100%);
-            background-image:
-                repeating-linear-gradient(90deg, #0a0a0a 0px, #1a1a1a 2px, #0a0a0a 4px),
-                linear-gradient(to top, rgba(255,0,100,0.1) 0%, transparent 50%);
+            height: 100%;
+            background: radial-gradient(ellipse at center, #1a0a3e 0%, #0a0015 100%);
+            transform: translateZ(-500px) scale(2);
         }
 
-        /* Neon lights */
-        .neon-sign {
+        /* Ground plane with 3D perspective */
+        .ground-3d {
             position: absolute;
-            top: 15%;
-            left: 10%;
-            font-size: 48px;
-            color: #ff00ff;
-            text-shadow:
-                0 0 10px #ff00ff,
-                0 0 20px #ff00ff,
-                0 0 30px #ff00ff,
-                0 0 40px #ff00ff;
-            animation: flicker 3s infinite alternate;
-            font-weight: bold;
-            letter-spacing: 8px;
+            width: 200%;
+            height: 200%;
+            bottom: 0;
+            left: -50%;
+            background:
+                repeating-linear-gradient(0deg,
+                    transparent 0px,
+                    transparent 49px,
+                    rgba(0,255,255,0.1) 49px,
+                    rgba(0,255,255,0.1) 50px
+                ),
+                repeating-linear-gradient(90deg,
+                    transparent 0px,
+                    transparent 49px,
+                    rgba(255,0,255,0.1) 49px,
+                    rgba(255,0,255,0.1) 50px
+                ),
+                linear-gradient(to bottom, #0a0a0a 0%, #1a1520 100%);
+            transform: rotateX(75deg) translateZ(-200px);
+            transform-origin: center bottom;
+            box-shadow:
+                0 0 100px rgba(255,0,255,0.3),
+                inset 0 0 100px rgba(0,0,0,0.8);
         }
 
-        .neon-sign-right {
+        /* Wall geometry */
+        .wall-3d {
             position: absolute;
-            top: 20%;
-            right: 8%;
-            font-size: 36px;
+            height: 120%;
+            width: 45%;
+            transform-style: preserve-3d;
+            background:
+                repeating-linear-gradient(0deg,
+                    #0f0f0f 0px,
+                    #1a1a1a 8px,
+                    #0f0f0f 9px,
+                    #0f0f0f 18px
+                ),
+                repeating-linear-gradient(90deg,
+                    transparent 0px,
+                    rgba(0,0,0,0.3) 35px,
+                    transparent 36px,
+                    transparent 70px
+                );
+            box-shadow:
+                inset 0 0 150px rgba(0,0,0,0.9),
+                0 0 50px rgba(0,0,0,0.8);
+            filter: brightness(0.7);
+        }
+
+        .wall-left {
+            left: -5%;
+            transform:
+                rotateY(25deg)
+                translateZ(-100px)
+                translateX(-50px);
+            transform-origin: right center;
+            box-shadow:
+                inset -50px 0 100px rgba(0,0,0,0.9),
+                50px 0 100px rgba(255,0,100,0.2);
+        }
+
+        .wall-right {
+            right: -5%;
+            transform:
+                rotateY(-25deg)
+                translateZ(-100px)
+                translateX(50px);
+            transform-origin: left center;
+            box-shadow:
+                inset 50px 0 100px rgba(0,0,0,0.9),
+                -50px 0 100px rgba(0,255,255,0.2);
+        }
+
+        /* Back wall with depth */
+        .back-wall {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background:
+                repeating-linear-gradient(0deg,
+                    #0a0a0a 0px,
+                    #151515 12px,
+                    #0a0a0a 13px
+                ),
+                repeating-linear-gradient(90deg,
+                    transparent 0px,
+                    rgba(0,0,0,0.5) 50px,
+                    transparent 51px
+                );
+            transform: translateZ(-400px) scale(1.5);
+            box-shadow: inset 0 0 200px rgba(0,0,0,0.9);
+        }
+
+        /* Interactive Objects with 3D depth */
+        .interactive-object {
+            position: absolute;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.8));
+        }
+
+        .interactive-object:hover {
+            transform: translateZ(30px) scale(1.05);
+            filter:
+                drop-shadow(0 20px 50px rgba(255,0,255,0.6))
+                brightness(1.2);
+        }
+
+        .interactive-object::after {
+            content: attr(data-label);
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
             color: #00ffff;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
             text-shadow:
                 0 0 10px #00ffff,
-                0 0 20px #00ffff,
-                0 0 30px #00ffff;
-            animation: flicker 2s infinite alternate;
-            transform: rotate(-90deg);
-            transform-origin: center;
+                0 0 20px #00ffff;
+            letter-spacing: 3px;
+            white-space: nowrap;
+        }
+
+        .interactive-object:hover::after {
+            opacity: 1;
+        }
+
+        /* === ALLEY SCENE === */
+        #alley-scene .ladder-3d {
+            right: 20%;
+            bottom: 30%;
+            width: 100px;
+            height: 450px;
+            background:
+                linear-gradient(90deg, #2a2a2a 0%, #3a3a3a 50%, #2a2a2a 100%),
+                repeating-linear-gradient(0deg,
+                    transparent 0px,
+                    transparent 35px,
+                    #4a4a4a 35px,
+                    #4a4a4a 45px
+                );
+            border-left: 10px solid #1a1a1a;
+            border-right: 10px solid #1a1a1a;
+            box-shadow:
+                0 0 40px rgba(255,0,100,0.4),
+                inset 0 0 30px rgba(0,0,0,0.7),
+                -10px 0 30px rgba(0,0,0,0.8);
+            transform: translateZ(50px) rotateY(-5deg);
+        }
+
+        #alley-scene .path-forward-3d {
+            bottom: 25%;
+            left: 50%;
+            transform: translateX(-50%) translateZ(-50px);
+            width: 400px;
+            height: 500px;
+            background: linear-gradient(to bottom,
+                rgba(150,0,200,0.15) 0%,
+                rgba(100,0,150,0.3) 50%,
+                rgba(50,0,100,0.45) 100%);
+            clip-path: polygon(35% 0%, 65% 0%, 95% 100%, 5% 100%);
+            box-shadow:
+                0 0 80px rgba(255,0,255,0.3),
+                inset 0 -100px 100px rgba(0,0,0,0.5);
+        }
+
+        #alley-scene .dumpster-3d {
+            left: 12%;
+            bottom: 30%;
+            width: 220px;
+            height: 160px;
+            background: linear-gradient(135deg, #1a3a1a 0%, #0f250f 100%);
+            border: 3px solid #2a4a2a;
+            box-shadow:
+                0 30px 60px rgba(0,0,0,0.9),
+                inset 0 0 40px rgba(0,0,0,0.7),
+                0 0 30px rgba(0,255,0,0.1);
+            transform: translateZ(80px) rotateY(10deg);
+        }
+
+        #alley-scene .dumpster-3d::before {
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: -5px;
+            width: calc(100% + 10px);
+            height: 30px;
+            background: linear-gradient(to bottom, #3a5a3a 0%, #2a4a2a 100%);
+            border: 3px solid #2a4a2a;
+            transform: rotateX(-45deg);
+            transform-origin: bottom;
+        }
+
+        /* === ROOFTOP SCENE === */
+        #rooftop-scene .sky {
+            background: radial-gradient(ellipse at top, #2a1a5e 0%, #0f0520 70%, #000 100%);
+        }
+
+        #rooftop-scene .rooftop-floor {
+            position: absolute;
+            width: 180%;
+            height: 180%;
+            bottom: 0;
+            left: -40%;
+            background:
+                repeating-linear-gradient(45deg,
+                    #1a1a1a 0px,
+                    #1a1a1a 40px,
+                    #0a0a0a 40px,
+                    #0a0a0a 80px
+                ),
+                linear-gradient(to bottom, #0f0f0f 0%, #1a1520 100%);
+            transform: rotateX(70deg) translateZ(-150px);
+            transform-origin: center bottom;
+            box-shadow:
+                0 0 150px rgba(0,255,255,0.2),
+                inset 0 0 100px rgba(0,0,0,0.8);
+        }
+
+        #rooftop-scene .ledge-3d {
+            bottom: 35%;
+            left: 15%;
+            width: 250px;
+            height: 80px;
+            background: linear-gradient(to bottom, #2a2a2a 0%, #0a0a0a 100%);
+            border-top: 5px solid #3a3a3a;
+            box-shadow:
+                0 40px 80px rgba(0,0,0,0.9),
+                0 0 40px rgba(255,0,100,0.3);
+            transform: translateZ(100px);
+        }
+
+        #rooftop-scene .hvac-unit {
+            right: 20%;
+            bottom: 35%;
+            width: 200px;
+            height: 180px;
+            background: linear-gradient(135deg, #2a2a3a 0%, #1a1a2a 100%);
+            border: 4px solid #3a3a4a;
+            box-shadow:
+                0 40px 80px rgba(0,0,0,0.9),
+                inset 0 0 50px rgba(0,0,0,0.5),
+                0 0 40px rgba(0,255,255,0.2);
+            transform: translateZ(120px) rotateY(-10deg);
+        }
+
+        #rooftop-scene .hvac-unit::before {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 20px;
+            top: 40%;
+            left: 10%;
+            background: repeating-linear-gradient(90deg,
+                #1a1a1a 0px,
+                #1a1a1a 8px,
+                transparent 8px,
+                transparent 16px
+            );
+            box-shadow: 0 0 20px rgba(0,255,255,0.5);
+        }
+
+        #rooftop-scene .antenna-3d {
+            left: 50%;
+            bottom: 45%;
+            width: 30px;
+            height: 400px;
+            background: linear-gradient(to top, #3a3a3a 0%, #1a1a1a 100%);
+            box-shadow:
+                0 0 40px rgba(255,0,255,0.5),
+                0 40px 80px rgba(0,0,0,0.8);
+            transform: translateX(-50%) translateZ(60px);
+        }
+
+        #rooftop-scene .antenna-3d::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background: #ff0066;
+            border-radius: 50%;
+            box-shadow:
+                0 0 30px #ff0066,
+                0 0 60px #ff0066;
+            animation: pulse 2s infinite;
+        }
+
+        #rooftop-scene .zipline-3d {
+            top: 20%;
+            right: 10%;
+            width: 150px;
+            height: 80px;
+            background: linear-gradient(135deg, #4a4a4a 0%, #2a2a2a 100%);
+            border: 3px solid #5a5a5a;
+            clip-path: polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%);
+            box-shadow:
+                0 20px 60px rgba(0,0,0,0.9),
+                0 0 40px rgba(0,255,255,0.3);
+            transform: translateZ(150px) rotateY(-15deg);
+        }
+
+        /* === DEEP ALLEY SCENE === */
+        #deep-alley-scene .back-wall {
+            background:
+                radial-gradient(ellipse at center, #1a0a2e 0%, #0a0015 100%),
+                repeating-linear-gradient(0deg,
+                    #0a0a0a 0px,
+                    #0f0f0f 15px,
+                    #0a0a0a 16px
+                );
+        }
+
+        #deep-alley-scene .door-3d {
+            left: 25%;
+            bottom: 30%;
+            width: 180px;
+            height: 280px;
+            background: linear-gradient(to right, #1a0a0a 0%, #2a1a1a 50%, #1a0a0a 100%);
+            border: 4px solid #3a2a2a;
+            box-shadow:
+                0 30px 60px rgba(0,0,0,0.9),
+                inset 0 0 40px rgba(255,0,0,0.1),
+                0 0 40px rgba(255,0,0,0.3);
+            transform: translateZ(70px) rotateY(5deg);
+        }
+
+        #deep-alley-scene .door-3d::before {
+            content: '';
+            position: absolute;
+            width: 60%;
+            height: 70%;
+            top: 15%;
+            left: 20%;
+            background: rgba(255,0,0,0.2);
+            box-shadow:
+                inset 0 0 30px rgba(0,0,0,0.8),
+                0 0 20px rgba(255,0,0,0.4);
+        }
+
+        #deep-alley-scene .vent-3d {
+            right: 28%;
+            bottom: 32%;
+            width: 200px;
+            height: 160px;
+            background:
+                repeating-linear-gradient(0deg,
+                    #1a1a1a 0px,
+                    #1a1a1a 18px,
+                    #0a0a0a 18px,
+                    #0a0a0a 20px
+                ),
+                linear-gradient(135deg, #2a2a2a 0%, #0a0a0a 100%);
+            border: 3px solid #2a2a2a;
+            box-shadow:
+                0 30px 60px rgba(0,0,0,0.9),
+                inset 0 0 40px rgba(0,0,0,0.7),
+                0 0 30px rgba(0,255,0,0.2);
+            transform: translateZ(60px) rotateY(-8deg);
+        }
+
+        #deep-alley-scene .crate-3d {
+            left: 45%;
+            bottom: 30%;
+            width: 160px;
+            height: 160px;
+            background:
+                linear-gradient(135deg, #3a2a1a 0%, #1a0a0a 50%, #2a1a0a 100%),
+                repeating-linear-gradient(45deg,
+                    transparent 0px,
+                    transparent 10px,
+                    rgba(0,0,0,0.3) 10px,
+                    rgba(0,0,0,0.3) 11px
+                );
+            border: 3px solid #4a3a2a;
+            box-shadow:
+                0 30px 60px rgba(0,0,0,0.9),
+                inset 0 0 30px rgba(0,0,0,0.6);
+            transform: translateZ(90px) rotateY(-12deg) rotateX(5deg);
+        }
+
+        /* Neon signs with 3D depth */
+        .neon-sign-3d {
+            position: absolute;
+            font-size: 56px;
+            font-weight: bold;
+            letter-spacing: 12px;
+            color: #ff00ff;
+            text-shadow:
+                0 0 10px currentColor,
+                0 0 20px currentColor,
+                0 0 40px currentColor,
+                0 0 80px currentColor,
+                0 20px 40px rgba(0,0,0,0.8);
+            animation: flicker 4s infinite;
+            transform-style: preserve-3d;
+        }
+
+        .neon-vertical {
+            writing-mode: vertical-rl;
+            transform: rotateY(15deg) translateZ(80px);
         }
 
         @keyframes flicker {
-            0%, 100% { opacity: 1; }
-            41%, 43% { opacity: 0.8; }
-            45%, 47% { opacity: 1; }
-            50% { opacity: 0.9; }
+            0%, 100% { opacity: 1; text-shadow:
+                0 0 10px currentColor,
+                0 0 20px currentColor,
+                0 0 40px currentColor,
+                0 0 80px currentColor; }
+            93%, 94% { opacity: 0.7; }
+            95%, 96% { opacity: 1; }
+            97% { opacity: 0.8; }
+            98%, 99% { opacity: 1; }
         }
 
-        /* Glowing ambient lights */
-        .glow-pink {
+        /* Volumetric light beams */
+        .light-beam {
             position: absolute;
             width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(255,0,100,0.4) 0%, transparent 70%);
-            top: 10%;
-            left: 5%;
-            filter: blur(40px);
-            animation: pulse 4s infinite;
+            height: 600px;
+            background: linear-gradient(to bottom,
+                rgba(255,0,255,0) 0%,
+                rgba(255,0,255,0.15) 50%,
+                rgba(255,0,255,0) 100%);
+            filter: blur(30px);
+            transform-origin: top center;
+            animation: beam-sway 8s ease-in-out infinite;
+            mix-blend-mode: screen;
         }
 
-        .glow-cyan {
+        @keyframes beam-sway {
+            0%, 100% { transform: translateZ(0) rotate(-2deg); }
+            50% { transform: translateZ(20px) rotate(2deg); }
+        }
+
+        /* Floating particles */
+        .particle {
             position: absolute;
-            width: 250px;
-            height: 250px;
-            background: radial-gradient(circle, rgba(0,255,255,0.3) 0%, transparent 70%);
-            top: 15%;
-            right: 5%;
-            filter: blur(50px);
-            animation: pulse 3s infinite;
+            width: 3px;
+            height: 3px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 50%;
+            animation: float linear infinite;
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; }
+        @keyframes float {
+            0% { transform: translateY(100vh) translateZ(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) translateZ(100px); opacity: 0; }
         }
 
-        /* Ladder */
-        .ladder {
+        /* Rain with 3D depth */
+        .rain-3d {
             position: absolute;
-            right: 25%;
-            bottom: 30%;
-            width: 80px;
-            height: 400px;
-            border-left: 8px solid #4a4a4a;
-            border-right: 8px solid #4a4a4a;
-            background: repeating-linear-gradient(
-                to bottom,
-                transparent 0px,
-                transparent 30px,
-                #4a4a4a 30px,
-                #4a4a4a 38px
-            );
-            box-shadow:
-                0 0 20px rgba(255,0,100,0.3),
-                inset 0 0 10px rgba(0,0,0,0.5);
-            transition: all 0.3s;
-            cursor: pointer;
+            width: 2px;
+            height: 80px;
+            background: linear-gradient(to bottom,
+                transparent,
+                rgba(100,150,255,0.6),
+                rgba(100,150,255,0.3));
+            animation: rain-fall-3d linear infinite;
+            box-shadow: 0 0 5px rgba(100,150,255,0.4);
         }
 
-        .ladder:hover {
-            transform: scale(1.05);
-            box-shadow:
-                0 0 40px rgba(255,0,100,0.8),
-                inset 0 0 10px rgba(0,0,0,0.5);
-            border-color: #ff0066;
+        @keyframes rain-fall-3d {
+            0% { transform: translateY(-100px) translateZ(var(--depth, 0)); }
+            100% { transform: translateY(100vh) translateZ(var(--depth, 0)); }
         }
 
-        .ladder::before {
-            content: '↑ CLIMB';
-            position: absolute;
-            top: -40px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #ff0066;
-            font-size: 14px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            text-shadow: 0 0 10px #ff0066;
+        /* HUD Interface */
+        .hud-3d {
+            position: fixed;
+            top: 25px;
+            left: 25px;
+            z-index: 10000;
+            font-size: 13px;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            background: rgba(0,20,30,0.7);
+            padding: 15px 20px;
+            border: 2px solid rgba(0,255,255,0.3);
+            border-radius: 2px;
+            backdrop-filter: blur(10px);
+        }
+
+        .hud-3d div {
+            margin-bottom: 8px;
             letter-spacing: 2px;
         }
 
-        .ladder:hover::before {
-            opacity: 1;
-        }
-
-        /* Dumpster */
-        .dumpster {
-            position: absolute;
-            left: 15%;
-            bottom: 30%;
-            width: 180px;
-            height: 120px;
-            background: linear-gradient(to bottom, #2a4a2a 0%, #1a3a1a 100%);
-            border: 2px solid #3a5a3a;
-            box-shadow:
-                0 10px 30px rgba(0,0,0,0.8),
-                inset 0 0 20px rgba(0,0,0,0.5);
-        }
-
-        .dumpster::before {
-            content: '';
-            position: absolute;
-            top: -20px;
-            left: 0;
-            width: 100%;
-            height: 20px;
-            background: linear-gradient(to bottom, #3a5a3a 0%, #2a4a2a 100%);
-            border: 2px solid #3a5a3a;
-        }
-
-        /* Steam/fog */
-        .steam {
-            position: absolute;
-            bottom: 28%;
-            left: 30%;
-            width: 100px;
-            height: 150px;
-            background: radial-gradient(ellipse at bottom, rgba(200,200,200,0.3) 0%, transparent 70%);
-            filter: blur(20px);
-            animation: steam-rise 6s infinite;
-        }
-
-        @keyframes steam-rise {
-            0% { transform: translateY(0); opacity: 0.6; }
-            100% { transform: translateY(-100px); opacity: 0; }
-        }
-
-        /* Path forward indicator */
-        .path-forward {
-            position: absolute;
-            bottom: 35%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 300px;
-            height: 400px;
-            background: linear-gradient(to bottom,
-                rgba(100,0,150,0.1) 0%,
-                rgba(50,0,100,0.3) 50%,
-                rgba(20,0,50,0.4) 100%);
-            clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .path-forward:hover {
-            background: linear-gradient(to bottom,
-                rgba(150,0,200,0.2) 0%,
-                rgba(100,0,150,0.4) 50%,
-                rgba(50,0,100,0.5) 100%);
-        }
-
-        .path-forward::before {
-            content: '▼ RUN';
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+        .hud-3d div::before {
+            content: '► ';
             color: #ff00ff;
-            font-size: 18px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            text-shadow: 0 0 10px #ff00ff;
-            letter-spacing: 3px;
         }
 
-        .path-forward:hover::before {
-            opacity: 1;
-        }
-
-        /* Rain effect */
-        .rain {
-            position: absolute;
-            width: 2px;
-            height: 50px;
-            background: linear-gradient(to bottom, transparent, rgba(100,150,255,0.5));
-            animation: rain-fall linear infinite;
-        }
-
-        @keyframes rain-fall {
-            0% { transform: translateY(-100px); }
-            100% { transform: translateY(100vh); }
-        }
-
-        /* Cables */
-        .cable {
-            position: absolute;
-            height: 2px;
-            background: linear-gradient(90deg,
-                transparent 0%,
-                #3a3a3a 10%,
-                #3a3a3a 90%,
-                transparent 100%);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        }
-
-        .cable-1 {
-            top: 25%;
-            left: 0;
-            width: 60%;
-            transform: rotate(-2deg);
-        }
-
-        .cable-2 {
-            top: 35%;
-            right: 0;
-            width: 55%;
-            transform: rotate(3deg);
-        }
-
-        /* Window lights */
-        .window {
-            position: absolute;
+        /* Click effects */
+        .click-ripple {
+            position: fixed;
             width: 40px;
-            height: 60px;
-            background: rgba(255,200,100,0.6);
-            box-shadow:
-                0 0 20px rgba(255,200,100,0.4),
-                inset 0 0 10px rgba(0,0,0,0.3);
-            border: 2px solid #2a2a2a;
-        }
-
-        .window-1 { top: 30%; left: 8%; }
-        .window-2 { top: 45%; left: 12%; background: rgba(100,200,255,0.5); }
-        .window-3 { top: 25%; right: 10%; background: rgba(255,100,200,0.5); }
-        .window-4 { top: 50%; right: 15%; }
-
-        /* HUD overlay */
-        .hud {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: #00ffff;
-            font-size: 12px;
-            text-shadow: 0 0 5px #00ffff;
-            z-index: 1000;
-            opacity: 0.7;
-        }
-
-        .hud div {
-            margin-bottom: 5px;
-        }
-
-        /* Interaction feedback */
-        .click-effect {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border: 2px solid #ff00ff;
+            height: 40px;
+            border: 3px solid #ff00ff;
             border-radius: 50%;
             pointer-events: none;
-            animation: click-expand 0.6s forwards;
+            z-index: 9999;
+            animation: ripple-expand 0.8s ease-out forwards;
+            box-shadow:
+                0 0 20px #ff00ff,
+                inset 0 0 20px #ff00ff;
         }
 
-        @keyframes click-expand {
+        @keyframes ripple-expand {
             0% {
-                transform: scale(1);
+                transform: scale(0) rotate(0deg);
                 opacity: 1;
             }
             100% {
-                transform: scale(3);
+                transform: scale(4) rotate(180deg);
                 opacity: 0;
             }
         }
 
-        /* Transition overlay */
-        .transition {
+        /* Scene transition */
+        .scene-transition {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: #000;
+            z-index: 9998;
             opacity: 0;
             pointer-events: none;
-            z-index: 9999;
-            transition: opacity 0.5s;
+            transition: opacity 0.6s;
         }
 
-        .transition.active {
+        .scene-transition.active {
             opacity: 1;
+        }
+
+        /* Loading scanlines effect */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 2px,
+                rgba(0,255,255,0.03) 2px,
+                rgba(0,255,255,0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.5;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
         }
     </style>
 </head>
 <body>
+    <!-- HUD -->
+    <div class="hud-3d" id="hud">
+        <div id="hud-location">LOCATION: SECTOR 7 ALLEY</div>
+        <div id="hud-time">TIME: 03:47 AM</div>
+        <div id="hud-weather">WEATHER: RAIN</div>
+    </div>
+
+    <!-- Main Scene Container -->
     <div id="scene">
-        <div class="alley-container">
-            <!-- HUD -->
-            <div class="hud">
-                <div>[ LOCATION: SECTOR 7 ALLEY ]</div>
-                <div>[ TIME: 03:47 AM ]</div>
-                <div>[ WEATHER: RAIN ]</div>
+        <!-- SCENE 1: ALLEY -->
+        <div class="scene-container" id="alley-scene">
+            <div class="environment">
+                <div class="sky"></div>
+                <div class="back-wall"></div>
+                <div class="wall-3d wall-left"></div>
+                <div class="wall-3d wall-right"></div>
+                <div class="ground-3d"></div>
+
+                <!-- Neon signs -->
+                <div class="neon-sign-3d" style="top: 12%; left: 8%; color: #ff00ff;">NEON</div>
+                <div class="neon-sign-3d neon-vertical" style="top: 15%; right: 10%; color: #00ffff; font-size: 42px;">BAR</div>
+
+                <!-- Light beams -->
+                <div class="light-beam" style="top: 0; left: 15%; --color: #ff00ff;"></div>
+                <div class="light-beam" style="top: 0; right: 20%; --color: #00ffff;"></div>
+
+                <!-- Interactive objects -->
+                <div class="interactive-object ladder-3d" data-label="CLIMB UP" onclick="goToScene('rooftop')"></div>
+                <div class="interactive-object path-forward-3d" data-label="RUN DEEPER" onclick="goToScene('deep-alley')"></div>
+                <div class="interactive-object dumpster-3d" data-label="SEARCH" onclick="searchObject('dumpster')"></div>
             </div>
+        </div>
 
-            <!-- Walls -->
-            <div class="left-wall"></div>
-            <div class="right-wall"></div>
+        <!-- SCENE 2: ROOFTOP -->
+        <div class="scene-container hidden" id="rooftop-scene">
+            <div class="environment">
+                <div class="sky"></div>
+                <div class="rooftop-floor"></div>
 
-            <!-- Ground -->
-            <div class="ground"></div>
+                <!-- Neon signs -->
+                <div class="neon-sign-3d" style="top: 8%; left: 12%; color: #ff0066; font-size: 72px;">SKYLINE</div>
 
-            <!-- Neon signs -->
-            <div class="neon-sign">NEON</div>
-            <div class="neon-sign-right">BAR</div>
+                <!-- Light beams -->
+                <div class="light-beam" style="top: 0; left: 25%; height: 800px;"></div>
+                <div class="light-beam" style="top: 0; right: 30%; height: 700px; background: linear-gradient(to bottom, rgba(0,255,255,0) 0%, rgba(0,255,255,0.15) 50%, rgba(0,255,255,0) 100%);"></div>
 
-            <!-- Ambient glows -->
-            <div class="glow-pink"></div>
-            <div class="glow-cyan"></div>
+                <!-- Interactive objects -->
+                <div class="interactive-object ledge-3d" data-label="LOOK DOWN" onclick="searchObject('ledge')"></div>
+                <div class="interactive-object hvac-unit" data-label="EXAMINE" onclick="searchObject('hvac')"></div>
+                <div class="interactive-object antenna-3d" data-label="HACK SIGNAL" onclick="searchObject('antenna')"></div>
+                <div class="interactive-object zipline-3d" data-label="ZIPLINE DOWN" onclick="goToScene('alley')"></div>
+            </div>
+        </div>
 
-            <!-- Cables -->
-            <div class="cable cable-1"></div>
-            <div class="cable cable-2"></div>
+        <!-- SCENE 3: DEEP ALLEY -->
+        <div class="scene-container hidden" id="deep-alley-scene">
+            <div class="environment">
+                <div class="sky"></div>
+                <div class="back-wall"></div>
+                <div class="wall-3d wall-left" style="filter: brightness(0.5);"></div>
+                <div class="wall-3d wall-right" style="filter: brightness(0.5);"></div>
+                <div class="ground-3d"></div>
 
-            <!-- Windows -->
-            <div class="window window-1"></div>
-            <div class="window window-2"></div>
-            <div class="window window-3"></div>
-            <div class="window window-4"></div>
+                <!-- Neon signs -->
+                <div class="neon-sign-3d" style="bottom: 40%; left: 15%; color: #ff0000; font-size: 38px; transform: translateZ(60px) rotateY(20deg);">DANGER</div>
 
-            <!-- Dumpster -->
-            <div class="dumpster"></div>
+                <!-- Light beams -->
+                <div class="light-beam" style="top: 0; right: 25%; background: linear-gradient(to bottom, rgba(255,0,0,0) 0%, rgba(255,0,0,0.15) 50%, rgba(255,0,0,0) 100%);"></div>
 
-            <!-- Steam -->
-            <div class="steam"></div>
-
-            <!-- Interactive elements -->
-            <div class="ladder" onclick="climbLadder(event)"></div>
-            <div class="path-forward" onclick="runForward(event)"></div>
+                <!-- Interactive objects -->
+                <div class="interactive-object door-3d" data-label="OPEN DOOR" onclick="searchObject('door')"></div>
+                <div class="interactive-object vent-3d" data-label="CRAWL THROUGH" onclick="searchObject('vent')"></div>
+                <div class="interactive-object crate-3d" data-label="EXAMINE CRATE" onclick="searchObject('crate')"></div>
+                <div class="interactive-object path-forward-3d" data-label="GO BACK" onclick="goToScene('alley')" style="transform: translateX(-50%) translateZ(-50px) rotateY(180deg);"></div>
+            </div>
         </div>
     </div>
 
-    <div class="transition" id="transition"></div>
+    <!-- Effects overlay -->
+    <div class="scanlines"></div>
+    <div class="scene-transition" id="transition"></div>
 
     <script>
-        // Create rain effect
+        let currentScene = 'alley';
+        const scenes = {
+            'alley': {
+                location: 'SECTOR 7 ALLEY',
+                time: '03:47 AM',
+                weather: 'RAIN'
+            },
+            'rooftop': {
+                location: 'ROOFTOP - LEVEL 47',
+                time: '03:52 AM',
+                weather: 'CLEAR / SMOG'
+            },
+            'deep-alley': {
+                location: 'DEEP ALLEY - SECTOR 7-B',
+                time: '03:49 AM',
+                weather: 'RAIN / FOG'
+            }
+        };
+
+        // Initialize scene
+        function initScene() {
+            createRain();
+            createParticles();
+            updateHUD();
+        }
+
+        // Create 3D rain effect
         function createRain() {
             const scene = document.getElementById('scene');
-            for (let i = 0; i < 50; i++) {
+            for (let i = 0; i < 80; i++) {
                 const rain = document.createElement('div');
-                rain.className = 'rain';
+                rain.className = 'rain-3d';
+                const depth = Math.random() * 200 - 100;
+                rain.style.setProperty('--depth', depth + 'px');
                 rain.style.left = Math.random() * 100 + '%';
-                rain.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+                rain.style.animationDuration = (Math.random() * 0.4 + 0.3) + 's';
                 rain.style.animationDelay = Math.random() * 2 + 's';
+                rain.style.opacity = Math.random() * 0.5 + 0.3;
                 scene.appendChild(rain);
             }
         }
 
-        // Click effect
-        function createClickEffect(e) {
-            const effect = document.createElement('div');
-            effect.className = 'click-effect';
-            effect.style.left = (e.clientX - 15) + 'px';
-            effect.style.top = (e.clientY - 15) + 'px';
-            document.body.appendChild(effect);
-            setTimeout(() => effect.remove(), 600);
+        // Create floating particles
+        function createParticles() {
+            const scene = document.getElementById('scene');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                scene.appendChild(particle);
+            }
         }
 
-        // Transition effect
-        function doTransition(callback) {
+        // Click ripple effect
+        function createRipple(e) {
+            const ripple = document.createElement('div');
+            ripple.className = 'click-ripple';
+            ripple.style.left = (e.clientX - 20) + 'px';
+            ripple.style.top = (e.clientY - 20) + 'px';
+            document.body.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 800);
+        }
+
+        // Update HUD based on scene
+        function updateHUD() {
+            const sceneData = scenes[currentScene];
+            document.getElementById('hud-location').textContent = 'LOCATION: ' + sceneData.location;
+            document.getElementById('hud-time').textContent = 'TIME: ' + sceneData.time;
+            document.getElementById('hud-weather').textContent = 'WEATHER: ' + sceneData.weather;
+        }
+
+        // Scene transition
+        function goToScene(sceneName) {
+            if (currentScene === sceneName) return;
+
             const transition = document.getElementById('transition');
+            const currentSceneEl = document.getElementById(currentScene + '-scene');
+            const nextSceneEl = document.getElementById(sceneName + '-scene');
+
             transition.classList.add('active');
+
             setTimeout(() => {
-                callback();
+                currentSceneEl.classList.add('hidden');
+                nextSceneEl.classList.remove('hidden');
+                currentScene = sceneName;
+                updateHUD();
+
                 setTimeout(() => {
                     transition.classList.remove('active');
                 }, 100);
-            }, 500);
+            }, 600);
         }
 
-        // Climb ladder interaction
-        function climbLadder(e) {
-            e.stopPropagation();
-            createClickEffect(e);
-            doTransition(() => {
-                alert('🪜 CLIMBING TO ROOFTOP...\n\n[ NEW AREA UNLOCKED ]\n\nYou ascend the rusty ladder, gripping each rung carefully. The neon lights below fade as you climb higher into the smog-filled night sky. The rooftop awaits...');
-                // Here you would load the rooftop scene
+        // Interactive object actions
+        function searchObject(objectType) {
+            const messages = {
+                dumpster: '[ SEARCHING DUMPSTER ]\n\nYou find scattered circuit boards, rusted metal scraps, and a flickering data chip marked "CLASSIFIED". The neon lights reflect off the wet garbage.',
+                ledge: '[ LOOKING DOWN ]\n\nThe city sprawls 47 floors below. Hover cars drift through neon-lit streets like bioluminescent fish. You can see the alley where you started, now looking impossibly small.',
+                hvac: '[ EXAMINING HVAC UNIT ]\n\nThe unit hums with electricity. Frost forms on its vents despite the warm night. A maintenance panel hangs loose, revealing a tangle of glowing cables.',
+                antenna: '[ HACKING SIGNAL ]\n\nYou tap into the antenna\'s datastream. Encrypted corporate communications flood your neural interface. Someone is watching... Connection terminated.',
+                door: '[ OPENING DOOR ]\n\nThe reinforced door is locked tight. A retinal scanner glows red beside it. You hear movement on the other side - footsteps, then silence.',
+                vent: '[ EXAMINING VENT ]\n\nThe vent grate is loose. Steam billows out carrying the smell of ozone and burnt plastic. You hear voices echoing from somewhere deep inside.',
+                crate: '[ EXAMINING CRATE ]\n\nThe military-grade crate bears corporate logos you don\'t recognize. It\'s locked with quantum encryption. Whatever\'s inside, someone didn\'t want it found.'
+            };
+
+            alert(messages[objectType] || 'Nothing interesting here.');
+        }
+
+        // Event listeners
+        document.addEventListener('click', createRipple);
+
+        window.addEventListener('mousemove', (e) => {
+            const scenes = document.querySelectorAll('.scene-container:not(.hidden) .environment');
+            const moveX = (e.clientX / window.innerWidth - 0.5) * 20;
+            const moveY = (e.clientY / window.innerHeight - 0.5) * 20;
+
+            scenes.forEach(scene => {
+                scene.style.transform = `rotateY(${moveX * 0.5}deg) rotateX(${-moveY * 0.5}deg)`;
             });
-        }
-
-        // Run forward interaction
-        function runForward(e) {
-            e.stopPropagation();
-            createClickEffect(e);
-            doTransition(() => {
-                alert('🏃 RUNNING DEEPER INTO THE ALLEY...\n\n[ NEW AREA UNLOCKED ]\n\nYou sprint down the narrow passage, boots splashing through neon-lit puddles. The alley stretches ahead, darker and more dangerous. Distant sounds of the city fade behind you...');
-                // Here you would load the deeper alley scene
-            });
-        }
-
-        // Ambient sound (simulated)
-        function playAmbience() {
-            console.log('🎵 Ambient cyberpunk sounds playing...');
-            console.log('- Rain pattering');
-            console.log('- Distant traffic');
-            console.log('- Neon buzzing');
-            console.log('- Police sirens in distance');
-        }
-
-        // Initialize scene
-        window.addEventListener('load', () => {
-            createRain();
-            playAmbience();
         });
 
-        // Easter egg: click anywhere to get scan effect
-        document.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('ladder') &&
-                !e.target.classList.contains('path-forward')) {
-                createClickEffect(e);
-            }
-        });
+        // Initialize on load
+        window.addEventListener('load', initScene);
+
+        console.log('🎮 CYBERPUNK 2077 - NEO CITY');
+        console.log('🎵 Systems online...');
+        console.log('🔊 Neural interface connected...');
+        console.log('💾 Welcome, Runner...');
     </script>
 </body>
 </html>
