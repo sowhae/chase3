@@ -1,7 +1,4 @@
-// Pizza Game
-
 let toppings = [];
-let placedToppings = [];
 let dragging = null;
 
 function setup() {
@@ -14,34 +11,16 @@ function setup() {
 }
 
 function draw() {
-  background(240, 230, 210);
+  background(240);
 
-  // Draw pizza
-  fill(220, 180, 120);
-  strokeWeight(20);
-  stroke(200, 160, 100);
-  circle(400, 300, 280);
-
-  noStroke();
-  fill(200, 60, 40);
-  circle(400, 300, 240);
-
-  // Draw toppings palette
   for (let i = 0; i < toppings.length; i++) {
     fill(toppings[i].color);
     circle(toppings[i].x, toppings[i].y, 50);
   }
 
-  // Draw placed toppings
-  for (let i = 0; i < placedToppings.length; i++) {
-    fill(placedToppings[i].color);
-    circle(placedToppings[i].x, placedToppings[i].y, 35);
-  }
-
-  // Draw dragging topping
   if (dragging != null) {
     fill(dragging.color);
-    circle(mouseX, mouseY, 35);
+    circle(mouseX, mouseY, 50);
   }
 }
 
@@ -49,22 +28,15 @@ function mousePressed() {
   for (let i = 0; i < toppings.length; i++) {
     let d = dist(mouseX, mouseY, toppings[i].x, toppings[i].y);
     if (d < 25) {
-      dragging = { name: toppings[i].name, color: toppings[i].color };
+      dragging = { color: toppings[i].color, index: i };
     }
   }
 }
 
 function mouseReleased() {
   if (dragging != null) {
-    let d = dist(mouseX, mouseY, 400, 300);
-    if (d < 140) {
-      placedToppings.push({
-        name: dragging.name,
-        color: dragging.color,
-        x: mouseX,
-        y: mouseY
-      });
-    }
+    toppings[dragging.index].x = mouseX;
+    toppings[dragging.index].y = mouseY;
     dragging = null;
   }
 }
