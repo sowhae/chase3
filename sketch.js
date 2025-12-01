@@ -1,421 +1,352 @@
-// Kayley Park - Pizza Game
-// Game States
-const STATES = {
-  START: 'start',
-  BUILDING: 'building',
-  BAKING: 'baking',
-  FINISHED: 'finished'
-};
+// Pizza Game by Kayley Park
 
-let gameState = STATES.START;
+// game screens
+let screen = 'start';
 
-// Pizza Configuration
-let doughType = 'regular'; // 'thin' or 'regular'
-let sauceType = null; // 'red' or 'green'
+// pizza settings
+let crustType = 'regular';
+let sauce = '';
 
-// Pizza Center
-const pizzaX = 400;
-const pizzaY = 300;
-const pizzaRadius = 120;
+// pizza position
+let pizzaX = 400;
+let pizzaY = 300;
 
-// Toppings Data
-let availableToppings = [];
+// toppings
+let toppings = [];
 let placedToppings = [];
-let draggedTopping = null;
+let dragging = null;
 
-// Baking Animation
-let bakeProgress = 0;
-let bakeTime = 180; // frames (3 seconds at 60fps)
+// baking timer
+let bakeTime = 0;
 
 function setup() {
   createCanvas(800, 600);
-  initializeToppings();
-}
 
-function initializeToppings() {
-  // Define available toppings with positions in sidebar
-  availableToppings = [
-    { name: 'pepperoni', color: '#d32f2f', x: 50, y: 150, size: 25, emoji: '🍕' },
-    { name: 'olive', color: '#1b5e20', x: 50, y: 220, size: 20, emoji: '🫒' },
-    { name: 'mushroom', color: '#8d6e63', x: 50, y: 290, size: 25, emoji: '🍄' },
-    { name: 'pepper', color: '#fbc02d', x: 50, y: 360, size: 25, emoji: '🫑' },
-    { name: 'tomato', color: '#e53935', x: 50, y: 430, size: 22, emoji: '🍅' },
-    { name: 'basil', color: '#2e7d32', x: 50, y: 500, size: 20, emoji: '🌿' }
-  ];
+  // create topping options
+  toppings.push({ name: 'pepperoni', color: [200, 50, 50], x: 50, y: 150 });
+  toppings.push({ name: 'olive', color: [50, 100, 50], x: 50, y: 220 });
+  toppings.push({ name: 'mushroom', color: [150, 120, 90], x: 50, y: 290 });
+  toppings.push({ name: 'pepper', color: [255, 200, 0], x: 50, y: 360 });
+  toppings.push({ name: 'cheese', color: [255, 220, 100], x: 50, y: 430 });
 }
 
 function draw() {
   background(240, 230, 210);
 
-  if (gameState === STATES.START) {
-    drawStartScreen();
-  } else if (gameState === STATES.BUILDING) {
-    drawBuildingScreen();
-  } else if (gameState === STATES.BAKING) {
-    drawBakingScreen();
-  } else if (gameState === STATES.FINISHED) {
-    drawFinishedScreen();
+  // show different screens
+  if (screen == 'start') {
+    showStartScreen();
+  } else if (screen == 'making') {
+    showMakingScreen();
+  } else if (screen == 'baking') {
+    showBakingScreen();
+  } else if (screen == 'done') {
+    showDoneScreen();
   }
 }
 
-function drawStartScreen() {
-  // Title
-  fill(180, 100, 50);
-  textSize(48);
-  textAlign(CENTER, CENTER);
-  textStyle(BOLD);
-  text('🍕 PIZZA GAME 🍕', width / 2, 150);
+// START SCREEN
+function showStartScreen() {
+  fill(100);
+  textSize(40);
+  textAlign(CENTER);
+  text('PIZZA GAME', width / 2, 150);
 
-  textSize(24);
-  fill(100, 70, 40);
+  textSize(20);
   text('by Kayley Park', width / 2, 200);
 
-  // Start Button
-  let btnW = 200;
-  let btnH = 60;
-  let btnX = width / 2 - btnW / 2;
-  let btnY = 300;
-
-  if (mouseX > btnX && mouseX < btnX + btnW &&
-      mouseY > btnY && mouseY < btnY + btnH) {
-    fill(220, 140, 60);
-  } else {
-    fill(200, 120, 50);
-  }
-
-  rect(btnX, btnY, btnW, btnH, 10);
-
+  // draw start button
+  fill(200, 120, 50);
+  rect(300, 280, 200, 60);
   fill(255);
-  textSize(32);
-  text('START', width / 2, btnY + btnH / 2);
-
-  // Instructions
-  textSize(16);
-  fill(100);
-  textAlign(CENTER);
-  text('Create your perfect pizza!', width / 2, 450);
+  textSize(24);
+  text('START', width / 2, 315);
 }
 
-function drawBuildingScreen() {
-  // Left Sidebar - Toppings
+// MAKING PIZZA SCREEN
+function showMakingScreen() {
+  // left sidebar
   fill(210, 180, 150);
   rect(0, 0, 120, height);
 
-  fill(100, 70, 40);
-  textSize(18);
+  fill(100);
+  textSize(14);
   textAlign(CENTER);
   text('TOPPINGS', 60, 30);
 
-  // Draw available toppings
-  for (let topping of availableToppings) {
-    drawTopping(topping.x, topping.y, topping);
-
-    // Label
+  // show toppings you can pick
+  for (let i = 0; i < toppings.length; i++) {
+    fill(toppings[i].color);
+    circle(toppings[i].x, toppings[i].y, 30);
     fill(80);
-    textSize(12);
-    text(topping.name, topping.x, topping.y + 35);
+    textSize(10);
+    text(toppings[i].name, toppings[i].x, toppings[i].y + 30);
   }
 
-  // Right Sidebar - Controls
+  // right sidebar
   fill(210, 180, 150);
   rect(width - 180, 0, 180, height);
 
-  fill(100, 70, 40);
-  textSize(18);
-  textAlign(CENTER);
-  text('BUILD YOUR PIZZA', width - 90, 30);
+  fill(100);
+  textSize(12);
+  text('CRUST:', width - 90, 60);
 
-  // Dough Selection
-  textSize(14);
-  text('DOUGH:', width - 90, 60);
-
-  drawButton(width - 150, 75, 120, 35, 'Regular', doughType === 'regular');
-  drawButton(width - 150, 120, 120, 35, 'Thin', doughType === 'thin');
-
-  // Sauce Selection
-  textSize(14);
-  text('SAUCE:', width - 90, 180);
-
-  drawButton(width - 150, 195, 120, 35, 'Red Sauce', sauceType === 'red');
-  drawButton(width - 150, 240, 120, 35, 'Green Pesto', sauceType === 'green');
-
-  // Bake Button
-  if (sauceType !== null) {
-    drawButton(width - 150, height - 100, 120, 50, 'BAKE!', false, color(216, 67, 21));
+  // crust buttons
+  if (crustType == 'regular') {
+    fill(100, 200, 100);
   } else {
-    fill(150);
-    rect(width - 150, height - 100, 120, 50, 8);
     fill(200);
+  }
+  rect(width - 150, 70, 120, 30);
+  fill(0);
+  textSize(12);
+  text('Regular', width - 90, 88);
+
+  if (crustType == 'thin') {
+    fill(100, 200, 100);
+  } else {
+    fill(200);
+  }
+  rect(width - 150, 110, 120, 30);
+  fill(0);
+  text('Thin', width - 90, 128);
+
+  // sauce buttons
+  fill(100);
+  textSize(12);
+  text('SAUCE:', width - 90, 170);
+
+  if (sauce == 'red') {
+    fill(100, 200, 100);
+  } else {
+    fill(200);
+  }
+  rect(width - 150, 180, 120, 30);
+  fill(0);
+  text('Red', width - 90, 198);
+
+  if (sauce == 'green') {
+    fill(100, 200, 100);
+  } else {
+    fill(200);
+  }
+  rect(width - 150, 220, 120, 30);
+  fill(0);
+  text('Green', width - 90, 238);
+
+  // bake button
+  if (sauce != '') {
+    fill(220, 100, 50);
+    rect(width - 150, height - 80, 120, 50);
+    fill(255);
     textSize(16);
-    text('Choose sauce\nfirst!', width - 90, height - 75);
+    text('BAKE', width - 90, height - 50);
   }
 
-  // Pizza Area
+  // draw the pizza
   drawPizza();
 
-  // Draw placed toppings
-  for (let topping of placedToppings) {
-    drawTopping(topping.x, topping.y, topping);
+  // draw toppings on pizza
+  for (let i = 0; i < placedToppings.length; i++) {
+    fill(placedToppings[i].color);
+    circle(placedToppings[i].x, placedToppings[i].y, 25);
   }
 
-  // Draw dragged topping
-  if (draggedTopping) {
-    drawTopping(mouseX, mouseY, draggedTopping);
+  // draw topping being dragged
+  if (dragging != null) {
+    fill(dragging.color);
+    circle(mouseX, mouseY, 25);
   }
 }
 
+// draw the pizza base
 function drawPizza() {
-  push();
-  translate(pizzaX, pizzaY);
-
-  // Shadow
-  fill(0, 0, 0, 30);
-  ellipse(5, 5, pizzaRadius * 2 + 10);
-
-  // Crust
+  // crust
   fill(220, 180, 120);
-  if (doughType === 'thin') {
-    strokeWeight(8);
+  if (crustType == 'thin') {
+    strokeWeight(5);
   } else {
-    strokeWeight(15);
+    strokeWeight(12);
   }
   stroke(200, 160, 100);
-  ellipse(0, 0, pizzaRadius * 2);
+  circle(pizzaX, pizzaY, 240);
 
-  // Sauce
-  if (sauceType === 'red') {
+  // sauce
+  noStroke();
+  if (sauce == 'red') {
     fill(200, 60, 40);
-    noStroke();
-    ellipse(0, 0, pizzaRadius * 1.7);
-  } else if (sauceType === 'green') {
+    circle(pizzaX, pizzaY, 200);
+  } else if (sauce == 'green') {
     fill(100, 160, 80);
-    noStroke();
-    ellipse(0, 0, pizzaRadius * 1.7);
+    circle(pizzaX, pizzaY, 200);
   }
-
-  pop();
 }
 
-function drawTopping(x, y, topping) {
-  // Draw emoji-based topping
-  textAlign(CENTER, CENTER);
-  textSize(topping.size * 1.5);
-  text(topping.emoji, x, y);
-}
-
-function drawButton(x, y, w, h, label, isActive, activeColor) {
-  if (activeColor === undefined) {
-    activeColor = color(76, 175, 80);
-  }
-
-  if (isActive) {
-    fill(activeColor);
-  } else if (mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h) {
-    fill(180, 160, 140);
-  } else {
-    fill(200, 180, 160);
-  }
-
-  rect(x, y, w, h, 8);
-
-  fill(isActive ? 255 : 80);
-  textSize(14);
-  textAlign(CENTER, CENTER);
-  text(label, x + w / 2, y + h / 2);
-}
-
-function drawBakingScreen() {
+// BAKING SCREEN
+function showBakingScreen() {
   background(255, 150, 80);
 
-  // Oven
-  fill(80, 60, 50);
-  rect(150, 100, 500, 400, 20);
+  // oven
+  fill(80);
+  rect(150, 100, 500, 400);
 
-  // Oven Window
+  // oven window
   fill(100, 80, 70);
-  rect(200, 150, 400, 300, 10);
+  rect(200, 150, 400, 300);
 
-  // Pizza in oven (slightly darker as it bakes)
-  let darkness = map(bakeProgress, 0, bakeTime, 0, 50);
-  push();
-  translate(400, 300);
+  // pizza inside
+  fill(200, 150, 90);
+  strokeWeight(10);
+  stroke(180, 130, 70);
+  circle(400, 300, 200);
 
-  // Glow effect
-  if (bakeProgress > bakeTime * 0.7) {
-    fill(255, 200, 100, 100);
-    ellipse(0, 0, pizzaRadius * 2.5);
-  }
-
-  // Crust
-  fill(220 - darkness, 180 - darkness, 120 - darkness * 0.5);
-  strokeWeight(doughType === 'thin' ? 8 : 15);
-  stroke(200 - darkness, 160 - darkness, 100 - darkness);
-  ellipse(0, 0, pizzaRadius * 2);
-
-  // Sauce
-  if (sauceType === 'red') {
-    fill(200 - darkness * 0.5, 60, 40);
-  } else {
-    fill(100 - darkness * 0.3, 160 - darkness * 0.3, 80 - darkness * 0.3);
-  }
+  // sauce
   noStroke();
-  ellipse(0, 0, pizzaRadius * 1.7);
+  if (sauce == 'red') {
+    fill(180, 50, 35);
+  } else {
+    fill(90, 140, 70);
+  }
+  circle(400, 300, 170);
 
-  // Toppings (slightly smaller/darker)
-  for (let topping of placedToppings) {
-    let offsetX = topping.x - pizzaX;
-    let offsetY = topping.y - pizzaY;
-    textAlign(CENTER, CENTER);
-    textSize(topping.size * 1.3);
-    text(topping.emoji, offsetX, offsetY);
+  // toppings
+  for (let i = 0; i < placedToppings.length; i++) {
+    fill(placedToppings[i].color);
+    let x = placedToppings[i].x - pizzaX + 400;
+    let y = placedToppings[i].y - pizzaY + 300;
+    circle(x, y, 20);
   }
 
-  pop();
-
-  // Progress Bar
+  // baking text
   fill(255);
   textSize(24);
   textAlign(CENTER);
   text('BAKING...', width / 2, 520);
 
+  // timer bar
   fill(100);
-  rect(250, 540, 300, 30, 15);
+  rect(250, 540, 300, 20);
   fill(255, 180, 60);
-  rect(250, 540, map(bakeProgress, 0, bakeTime, 0, 300), 30, 15);
+  rect(250, 540, bakeTime * 2, 20);
 
-  // Update progress
-  bakeProgress++;
-  if (bakeProgress >= bakeTime) {
-    gameState = STATES.FINISHED;
+  // count up timer
+  bakeTime = bakeTime + 1;
+  if (bakeTime >= 150) {
+    screen = 'done';
   }
 }
 
-function drawFinishedScreen() {
+// DONE SCREEN
+function showDoneScreen() {
   background(255, 240, 220);
 
-  // Title
-  fill(180, 100, 50);
-  textSize(42);
+  fill(100);
+  textSize(32);
   textAlign(CENTER);
-  textStyle(BOLD);
-  text('🎉 YOUR PIZZA IS READY! 🎉', width / 2, 60);
+  text('YOUR PIZZA IS READY!', width / 2, 60);
 
-  // Final Pizza Display
-  push();
-  translate(pizzaX, pizzaY - 20);
-
-  // Shadow
-  fill(0, 0, 0, 20);
-  ellipse(5, 5, pizzaRadius * 2.4 + 10);
-
-  // Crust (slightly browned)
+  // show finished pizza
   fill(200, 150, 90);
-  strokeWeight(doughType === 'thin' ? 8 : 15);
+  strokeWeight(12);
   stroke(180, 130, 70);
-  ellipse(0, 0, pizzaRadius * 2.4);
+  circle(pizzaX, pizzaY, 260);
 
-  // Sauce
-  if (sauceType === 'red') {
+  noStroke();
+  if (sauce == 'red') {
     fill(180, 50, 35);
   } else {
     fill(90, 140, 70);
   }
-  noStroke();
-  ellipse(0, 0, pizzaRadius * 2);
+  circle(pizzaX, pizzaY, 220);
 
-  // Toppings
-  for (let topping of placedToppings) {
-    let offsetX = topping.x - pizzaX;
-    let offsetY = topping.y - pizzaY;
-    textAlign(CENTER, CENTER);
-    textSize(topping.size * 1.8);
-    text(topping.emoji, offsetX, offsetY);
+  // show toppings
+  for (let i = 0; i < placedToppings.length; i++) {
+    fill(placedToppings[i].color);
+    circle(placedToppings[i].x, placedToppings[i].y, 30);
   }
 
-  pop();
+  // info
+  fill(100);
+  textSize(16);
+  text('Crust: ' + crustType, width / 2, 500);
+  text('Sauce: ' + sauce, width / 2, 520);
+  text('Toppings: ' + placedToppings.length, width / 2, 540);
 
-  // Pizza Stats
-  fill(100, 70, 40);
-  textSize(18);
-  textStyle(NORMAL);
-  text('Dough: ' + (doughType === 'thin' ? 'Thin Crust' : 'Regular'), width / 2, 480);
-  text('Sauce: ' + (sauceType === 'red' ? 'Red Tomato' : 'Green Pesto'), width / 2, 505);
-  text('Toppings: ' + placedToppings.length, width / 2, 530);
-
-  // Make Another Button
-  drawButton(width / 2 - 100, 550, 200, 50, 'MAKE ANOTHER!', false, color(76, 175, 80));
+  // make another button
+  fill(100, 200, 100);
+  rect(300, 560, 200, 40);
+  fill(0);
+  textSize(16);
+  text('MAKE ANOTHER', width / 2, 582);
 }
 
+// when mouse is clicked
 function mousePressed() {
-  if (gameState === STATES.START) {
-    // Check Start Button
-    let btnX = width / 2 - 100;
-    let btnY = 300;
-    if (mouseX > btnX && mouseX < btnX + 200 &&
-        mouseY > btnY && mouseY < btnY + 60) {
-      gameState = STATES.BUILDING;
+  // start screen - check if start button clicked
+  if (screen == 'start') {
+    if (mouseX > 300 && mouseX < 500 && mouseY > 280 && mouseY < 340) {
+      screen = 'making';
     }
-  } else if (gameState === STATES.BUILDING) {
-    // Check topping selection
-    for (let topping of availableToppings) {
-      let d = dist(mouseX, mouseY, topping.x, topping.y);
-      if (d < 30) {
-        draggedTopping = { ...topping };
-        return;
+  }
+
+  // making screen
+  else if (screen == 'making') {
+    // check if clicked on a topping
+    for (let i = 0; i < toppings.length; i++) {
+      let d = dist(mouseX, mouseY, toppings[i].x, toppings[i].y);
+      if (d < 15) {
+        dragging = { name: toppings[i].name, color: toppings[i].color };
       }
     }
 
-    // Check dough buttons
+    // check crust buttons
     if (mouseX > width - 150 && mouseX < width - 30) {
-      if (mouseY > 75 && mouseY < 110) {
-        doughType = 'regular';
-      } else if (mouseY > 120 && mouseY < 155) {
-        doughType = 'thin';
+      if (mouseY > 70 && mouseY < 100) {
+        crustType = 'regular';
+      }
+      if (mouseY > 110 && mouseY < 140) {
+        crustType = 'thin';
       }
     }
 
-    // Check sauce buttons
+    // check sauce buttons
     if (mouseX > width - 150 && mouseX < width - 30) {
-      if (mouseY > 195 && mouseY < 230) {
-        sauceType = 'red';
-      } else if (mouseY > 240 && mouseY < 275) {
-        sauceType = 'green';
+      if (mouseY > 180 && mouseY < 210) {
+        sauce = 'red';
+      }
+      if (mouseY > 220 && mouseY < 250) {
+        sauce = 'green';
       }
     }
 
-    // Check bake button
-    if (sauceType !== null &&
-        mouseX > width - 150 && mouseX < width - 30 &&
-        mouseY > height - 100 && mouseY < height - 50) {
-      gameState = STATES.BAKING;
-      bakeProgress = 0;
+    // check bake button
+    if (sauce != '' && mouseX > width - 150 && mouseX < width - 30 && mouseY > height - 80 && mouseY < height - 30) {
+      screen = 'baking';
+      bakeTime = 0;
     }
-  } else if (gameState === STATES.FINISHED) {
-    // Check Make Another button
-    if (mouseX > width / 2 - 100 && mouseX < width / 2 + 100 &&
-        mouseY > 550 && mouseY < 600) {
-      // Reset game
-      doughType = 'regular';
-      sauceType = null;
+  }
+
+  // done screen - check make another button
+  else if (screen == 'done') {
+    if (mouseX > 300 && mouseX < 500 && mouseY > 560 && mouseY < 600) {
+      // reset everything
+      screen = 'making';
+      crustType = 'regular';
+      sauce = '';
       placedToppings = [];
-      draggedTopping = null;
-      gameState = STATES.BUILDING;
+      bakeTime = 0;
     }
   }
 }
 
+// when mouse is released
 function mouseReleased() {
-  if (gameState === STATES.BUILDING && draggedTopping) {
-    // Check if dropped on pizza
+  if (dragging != null) {
+    // check if dropped on pizza
     let d = dist(mouseX, mouseY, pizzaX, pizzaY);
-    if (d < pizzaRadius) {
-      // Place topping on pizza
-      placedToppings.push({
-        ...draggedTopping,
-        x: mouseX,
-        y: mouseY
-      });
+    if (d < 120) {
+      placedToppings.push({ name: dragging.name, color: dragging.color, x: mouseX, y: mouseY });
     }
-    draggedTopping = null;
+    dragging = null;
   }
 }
